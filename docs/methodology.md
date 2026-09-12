@@ -1,69 +1,78 @@
-# Experimental methodology
+# Optimization methodology
 
-## A falsifiable optimization claim
+The unit of progress is an explained experiment. A source challenge supplies a
+workload, but a useful portfolio study must connect an algorithm, a hardware
+model, and measurements. Nothing in this document is an implemented framework.
 
-Every optimization should answer five questions:
+## Workflow
 
-1. What bottleneck do we expect for a particular shape, dtype, and GPU?
-2. What changes in the work mapping, memory traffic, or instructions?
-3. Why should that change improve execution on this hardware?
-4. Does repeated benchmark evidence show the predicted improvement?
-5. Do profiler counters support the proposed explanation?
+1. **Understand the algorithm.** State shapes, layouts, mutation, dtype,
+   accumulation, output precision, and boundary behavior.
+2. **Build a correctness reference.** Match the source contract first; label
+   local extensions and numerical approximations separately.
+3. **Derive a simple performance model.** Estimate useful work, traffic,
+   temporary storage, parallelism, and a plausible lower bound.
+4. **Implement a straightforward GPU version.** Make ownership and memory
+   access visible before introducing sophisticated scheduling.
+5. **Benchmark.** Use the planned warmup, completion, precision, and sampling rules.
+6. **Profile.** Inspect a representative case with counters chosen for a hypothesis.
+7. **Identify the bottleneck.** Distinguish bandwidth, instruction/dependency
+   throughput, synchronization, resource limits, and launch overhead.
+8. **Form an optimization hypothesis.** Predict what should change in both
+   latency and hardware evidence.
+9. **Implement the optimization.** Preserve the baseline and give the variant
+   a meaningful mechanism-based name.
+10. **Measure again.** Repeat correctness, benchmark the same cases, and profile
+    the expected hardware effect. Include regressions and crossover sizes.
+11. **Explain why performance changed.** Compare the prediction to observations,
+    discuss alternatives, and define the next experiment.
 
-Until measurements exist, describe expected behavior as a hypothesis. Preserve
-baselines and negative results. Report slowdowns and crossover sizes; do not
-publish only a selected winning shape. Keep algorithmic changes distinct from
-precision, approximation, and semantics changes.
+## Questions to answer
 
-## Roofline reasoning
+- Is the workload memory-bound, compute-bound, synchronization-bound, or launch-bound at this shape?
+- How many bytes must move, and through which memory level?
+- How many useful FLOPs or integer operations are required?
+- What is a plausible theoretical lower bound, and what costs does it omit?
+- Are loads and stores coalesced across neighboring lanes?
+- Is shared memory providing reuse or only adding traffic and barriers?
+- Are shared-memory bank conflicts present?
+- Does occupancy limit latency hiding, or would extra registers improve useful work?
+- Are synchronization or dependency chains preventing issue?
+- Are registers spilling into local memory?
+- Is launch overhead dominant for small inputs or multi-pass algorithms?
+- Is fusion useful after accounting for resources and lost parallelism?
+- Are we trading recomputation for reduced memory traffic?
 
-Arithmetic intensity is useful work divided by traffic at a specified memory
-level. A simple bound is `min(peak_compute, bandwidth * arithmetic_intensity)`.
-Specify whether bandwidth means DRAM, L2, or shared memory. Count rereads,
-temporary buffers, and intermediate reduction passes when estimating a concrete
-implementation. A lower-bound traffic model is useful for comparing algorithms
-but does not replace measured traffic.
+## Performance models
 
-Vector add has intensity `1/(3s)` FLOP/byte, so a large streaming input is a
-bandwidth candidate. Tiny vectors expose launch overhead. Reductions add
-dependencies, barriers, and extra launches to a low-intensity operation. Softmax
-also requires exponentials and reductions, so instruction/dependency throughput
-can matter even when its minimum traffic is small.
+For an operation with useful work `F`, logical traffic `B`, compute ceiling `P`,
+and relevant bandwidth `W`, a first lower bound is `max(F/P, B/W)`. It omits
+launches, dependencies, barriers, padding, and many occupancy effects. Arithmetic
+intensity is `F/B`; a roofline comparison must specify the memory level and
+precision of its ceilings.
 
-## Resource reasoning
+Vector addition provides a minimum-traffic model of `3 * N * bytes_per_element`.
+Dense matrix multiplication has approximately `2*M*N*K` useful FLOPs, but its
+actual traffic depends on reuse. Reductions add partial-buffer traffic; online
+attention changes intermediate storage. Never equate a lower-bound traffic
+estimate to measured DRAM bytes. For exponentials, integer hashing, or sparse
+routing, do not invent an arbitrary FLOP count merely to populate a chart.
 
-Coalescing concerns addresses issued by neighboring lanes. Vector loads may
-reduce instructions without improving already coalesced transactions. Shared
-memory can reduce cross-warp communication cost, but barriers and bank conflicts
-can offset that gain. Registers retain values cheaply until pressure reduces
-resident warps or induces local-memory spills. Occupancy alone does not predict
-performance; examine eligible warps, issue activity, and memory latency together.
+## Naming experiments
 
-Tensor Cores, asynchronous copies, cooperative groups, and persistent scheduling
-belong in experiments whose data reuse and synchronization requirements justify
-them. The first three workloads do not need these mechanisms to make their
-optimization questions clear. Future GEMM/attention work will introduce them
-with architecture and precision contracts.
+Prefer names such as `scalar_coalesced`, `aligned_vector_loads`, `shared_tree`,
+`warp_shuffle`, `padded_shared_tile`, `register_tile`, or `online_softmax`.
+Keep numerical changes and precision modes in the name or configuration. A
+variant called optimized is not proof that it is faster.
 
-## Numerical reasoning
+## Evidence note template
 
-Reduction order changes floating-point rounding. Tests compare against both
-PyTorch FP32 and FP64 diagnostics, with exact checks for selected representable
-patterns. The generic sum error budget scales with `sum(abs(x))` so cancellation
-does not make relative error meaningless; this budget is not a mathematical
-guarantee for unbounded data or tensor size. Also examine absolute error against
-FP64 for any performance-focused reduction change.
+For each optimization, record the workload case, expected bottleneck, exact
+change, predicted counter behavior, measured latency distribution, observed
+counter changes, numerical effects, and an alternative explanation. Finish
+with one experiment that could disprove the explanation.
 
-Softmax subtracts the row maximum before exponentiation. Rows containing NaN,
-positive infinity, or only negative infinity follow PyTorch's NaN behavior;
-tests explicitly check those cases. No fast-math compiler flag is enabled.
-Triton's exponential approximation is checked with dtype-specific tolerances.
-
-## Evidence checklist for a measured result
-
-- Clean source commit, exact package freeze, GPU/driver/toolkit inventory.
-- Full command, raw samples, seed, output policy, clocks/power, thermal/load notes.
-- Correctness suite and relevant race/memory checks passing on that GPU.
-- Shape/dtype sweep with matching PyTorch comparison and dispersion.
-- Focused profiler capture with interpretation and plausible alternative causes.
-- Limits and a next experiment that could disprove the interpretation.
+P0 work should retain negative results. More occupancy, fewer instructions, or
+higher cache hit rate is useful only if it explains better useful execution.
+Do not introduce Tensor Cores, asynchronous copies, or persistence merely to
+make a source file look advanced.

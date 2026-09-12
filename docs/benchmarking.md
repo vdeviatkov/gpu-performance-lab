@@ -1,100 +1,82 @@
-# Benchmarking
+# Benchmarking plan
 
-## Contract and fairness
+**Plan only. No active benchmark framework is implemented in this scaffold.**
+The earlier framework is preserved in the [archive](../archive/README.md), but
+it is not the current API or an accepted measurement system for these studies.
 
-The runner compares functional, forward-only APIs: input creation, host/device
-transfer, DLPack conversion, JIT compilation, and extension builds are outside
-timing. Output allocation and reduction scratch allocation occur inside each
-call for every backend. Eager PyTorch is the production baseline. A future
-`torch.compile` comparison must get a separate name and compilation warmup.
+## Contract before timing
 
-All implementations receive the same seeded input values, shape, and dtype.
-Vector add/reduction use one-dimensional contiguous tensors; softmax uses
-contiguous matrices and the last axis. Reduction accumulates and returns FP32.
-Softmax uses stable max subtraction and FP32 intermediate arithmetic for the
-custom kernels. Dtype-specific tolerances and a cancellation-aware reduction
-budget live in `common/correctness/checks.py`; callers can override tolerances.
+Every comparison should specify shape, strides/layout, dtype and accumulator,
+output precision, mutation, approximations, and what is included in the call.
+Use the same input values and a meaningful PyTorch/library baseline. Add
+`torch.compile` as a separately named baseline where fusion is relevant. JAX
+comparisons must preserve semantics and use a GPU rather than an accidental CPU
+fallback.
 
-## Timing scopes
+Correctness gates timing. Test tails, empty/tiny cases where defined, large and
+odd shapes, numerical extremes, and data-dependent distributions. Use tolerances
+justified by dtype and reduction behavior; also inspect absolute error near
+cancellation. Check exact integer results where the contract demands them.
 
-| Mode | Completion mechanism | Meaning | Backends |
-|---|---|---|---|
-| `wall` (default) | `torch.cuda.synchronize(device)` or JAX `block_until_ready()` | Host-observed functional API latency, including dispatch/allocation/fence overhead | All |
-| `cuda_event` | Events recorded on the current PyTorch CUDA stream; end event synchronized | Elapsed stream interval around one functional call | PyTorch, Triton, CUDA |
+## Planned measurement rules
 
-CUDA events avoid charging the final host synchronization to the interval, but
-Python submission gaps may still appear between start/end events for very short
-kernels. This is not a pure kernel-duration measurement and does not amortize
-launch costs with CUDA Graphs. Use Nsight Systems to separate dispatch gaps from
-GPU execution. JAX runs on its own runtime/stream, so a PyTorch event pair must
-not time it. Do not compare speedups between modes or CPU/GPU runs.
+- Complete an initialization call, compilation, extension build, and warmup
+  before collecting steady-state samples. Report cold-start costs separately.
+- Use GPU completion correctly. CUDA events must bracket work on the relevant
+  stream. Host timing needs a completion fence, not just an asynchronous launch.
+- With JAX, JIT-compile outside timing and wait for results with
+  `block_until_ready()`. A PyTorch event pair must not pretend to time another
+  runtime's untracked stream. See [JAX benchmarking](https://docs.jax.dev/en/latest/benchmarking.html).
+- Distinguish device/stream elapsed time from host-observed API latency. Include
+  dispatch, allocations, transfers, or synchronization only under an explicit
+  scope; never mix scopes into one speedup table.
+- Report microsecond latency where appropriate, median/p50, p20/p80, sample
+  count, and optionally mean/standard deviation. Keep raw samples.
+- Warm up each backend, repeat complete experiments, vary backend order, and
+  record the random seed. Percentiles are not confidence intervals.
+- Sweep multiple shapes and supported FP32/FP16/BF16 cases. Add integer formats
+  only when the source or lab extension defines rounding and scaling.
+- Include both small launch-sensitive and large working sets. Separate reused
+  inputs from a streaming/rotating-buffer policy, and compare footprint to L2.
+- Benchmark multi-pass algorithms and fused pipelines end to end, including all
+  required passes. Restore mutable inputs/cache state consistently between samples.
 
-The initial call is completed before 25 warmup iterations; the default then
-collects 100 individually completed samples. Each sample is one invocation.
-Timing includes all reduction passes. Samples are retained in microseconds,
-with interpolated p20/p50/p80, median, population standard deviation, and mean.
-Percentiles describe observed variation, not confidence intervals.
+PyTorch exposes CUDA events and explicit completion facilities; their scope
+must match the measured work. Consult the [CUDA semantics guide](https://docs.pytorch.org/docs/stable/notes/cuda.html)
+when implementing the timer. Profiling and ordinary timing should be separate runs.
 
-## Running a study
+## Metrics and their limits
 
-1. Run correctness tests and confirm backend versions/toolkit compatibility.
-2. Record environment and idle GPU conditions. Set clocks/power only if authorized
-   on the machine; record the chosen settings and thermal state.
-3. Use `smoke.json` to check execution, then `full.json` for launch-sensitive,
-   cache-resident, and larger working sets. Check available VRAM first.
-4. Repeat complete runs with different recorded seeds and separate output paths.
-   The seed controls input generation and shuffled backend order within each case.
-5. Compare distributions and repeat anomalous cases. Control external GPU load.
-6. Profile representative cases separately from timing. Profiler replay changes
-   execution and cache state; profiler duration is not the benchmark latency.
+| Metric | Planned use | Interpretation limit |
+|---|---|---|
+| Latency and percentiles | All workloads | State device-only versus API/end-to-end scope |
+| Effective GB/s | Copy, transpose, reduction, fusion, caches | Useful/logical bytes divided by time are not measured DRAM throughput |
+| FLOP/s | GEMV/GEMM and explicitly modeled attention | State useful versus executed work, precision, masks, and padding |
+| Elements/nonzeros/tokens per second | Primitives, sparse kernels, routing | Define exactly what one item represents |
+| Arithmetic intensity | Roofline reasoning | Specify the traffic model and memory level |
+| Percentage of theoretical bandwidth | Sourced hardware ceiling | Do not guess the ceiling or equate cache throughput with DRAM bandwidth |
+| Occupancy/register/shared-memory use | Explain resource constraints | These are profiler observations, not independent performance scores |
+| Numerical error and memory footprint | Mixed precision and fusion | A faster result with changed semantics is a different experiment |
 
-Repeated inputs intentionally provide a warm/reused working set. There is no
-cache flush or rotating input pool. A large vector case does not prove streaming
-DRAM behavior on every GPU: compare its footprint with that GPU's L2 size and
-inspect counters. Rotating buffers and CUDA Graph timing are future methodology
-extensions, each requiring a distinct recorded timing/cache policy.
+## Environment record
 
-## Derived metrics
+Future JSON should record GPU model/UUID and architecture, driver, toolkit and
+runtime versions, PyTorch/Triton/JAX versions, Python/OS, exact package freeze,
+source commit/dirty state, relevant environment flags, device/stream, clocks,
+power/thermal/load notes, dtype/layout, seed, timing/warmup/sample settings,
+allocation/cache policies, correctness status, and raw latency samples.
 
-For `N` values with `s` bytes/value, vector add has minimum traffic `3Ns` and `N`
-adds. Reduction has `Ns + 4` minimum bytes and approximately `N-1` additions,
-excluding intermediate traffic and identity additions. Softmax has a lower bound
-of `2Ns` bytes. Its exponentials, comparisons, and divides are not summarized by
-an arbitrary FLOP count. Each kernel README explains actual pass traffic.
+Use JSON as the source of truth; later create Markdown, CSV, and plots from it.
+Record unavailable capabilities as explicit skips and distinguish them from
+compiler, correctness, out-of-memory, or runtime failures. Never assign a timing
+to a failed or skipped implementation.
 
-Effective bandwidth is `minimum_bytes / seconds / 1e9` in decimal GB/s.
-It is an algorithmic throughput metric, not a measured memory-bus rate. Values
-above nominal DRAM bandwidth can reflect cache residency. Supply
-`--peak-bandwidth VALUE --bandwidth-source URL` to record a sourced hardware
-ceiling and compute its percentage; no hardware ceiling is guessed.
+## Honest comparisons
 
-## Result format
+Pair speedups only across matching workload semantics, hardware, input cases,
+precision, and timing scope. Publish noise and slowdowns. For stateful inference,
+separate GPU kernel latency from host scheduling and memory-management costs,
+then provide an end-to-end view where it answers the systems question.
 
-Schema version 1 has `environment`, `settings`, `cache_policy`, `allocation_policy`,
-and `results`. Each successful record has kernel/shape/dtype/implementation,
-variant, timing mode, correctness status, raw `samples_us`, `latency_us`, work
-model, and derived metrics. Skips/failures have a reason and no latency numbers.
-Compiler, OOM, launch, and correctness errors fail the run; unavailable optional
-dependencies/capabilities are explicit skips. `--require-all` rejects skips too.
-
-The runner writes completed records atomically after each implementation and
-refuses to overwrite an existing run. Reports operate on one JSON run to prevent
-accidental mixing of hardware/environments. A PyTorch speedup is emitted only
-for matching shape, dtype, workload, and timing mode within that run.
-
-```bash
-python -m benchmarks.run_all --kernel softmax --shape 4096 4096 \
-  --dtypes fp16 bf16 --warmup 50 --repetitions 200 --output artifacts/softmax-run1.json
-python -m benchmarks.report artifacts/softmax-run1.json --output artifacts/softmax-run1.md
-python -m benchmarks.report artifacts/softmax-run1.json --format csv --output artifacts/softmax-run1.csv
-python -m pip freeze > artifacts/requirements-measured.txt
-```
-
-Use CSV in a plotting tool, grouping by shape/dtype/mode and showing percentile
-bands. Never mix different devices or timing scopes into one speedup curve.
-
-## References
-
-- [PyTorch CUDA semantics and timing](https://docs.pytorch.org/docs/stable/notes/cuda.html)
-- [JAX asynchronous dispatch](https://docs.jax.dev/en/latest/async_dispatch.html)
-- [JAX benchmarking](https://docs.jax.dev/en/latest/benchmarking.html)
+Do not commit synthetic timings or illustrative Nsight counters as results.
+Before a real run, use exactly: **Results pending hardware benchmark**.

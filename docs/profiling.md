@@ -1,79 +1,65 @@
-# Profiling
+# Profiling plan
 
-Use Nsight Systems first to inspect the timeline, then Nsight Compute for a few
-representative kernel launches. The profile target compiles, checks correctness,
-warms up, synchronizes, and only then enters a CUDA profiler API capture region.
-JAX profiling is outside this wrapper because it uses a separate runtime; use
-JAX's official profiler tools for XLA traces.
+**Plan only. No profiling target or capture script is implemented here.**
+Each study should choose measurements from its optimization hypothesis, rather
+than collecting every counter and searching for a favorable explanation.
 
-```bash
-bash scripts/profile.sh nsys --kernel vector_add --implementation cuda_optimized --shape 67108864
-bash scripts/profile.sh ncu --kernel reduction --implementation cuda_naive --shape 16777219
-bash scripts/profile.sh ncu --kernel reduction --implementation cuda_optimized --shape 16777219
-```
+## Nsight Systems: where time goes
 
-Reports go to timestamped paths in `artifacts/profiles/`. The wrapper uses
-`SpeedOfLight`, `LaunchStats`, `Occupancy`, `MemoryWorkloadAnalysis`, and
-`SchedulerStats` sections, without requesting the full counter set. Section
-availability can vary by Nsight release/GPU; inspect `ncu --list-sections` and
-`ncu --query-metrics` on the target machine. GPU counter access may require a
-machine administrator's configuration; do not change system permissions blindly.
+Use the timeline to inspect CUDA API calls, kernel launches, stream ordering,
+copies, synchronization, allocations, and gaps. It should answer whether a small
+workload is launch-bound, whether a reduction has unnecessary passes, or whether
+an apparent kernel improvement is hidden by host overhead. Add named ranges
+around the measured operation when a real harness exists.
 
-## What to inspect
+Compile, establish correctness, and warm up before capturing the steady-state
+region. Analyze initialization separately when deployment latency is relevant.
+Compare a complete MLP/attention pipeline as well as individual kernels. Refer
+to the [Nsight Systems guide](https://docs.nvidia.com/nsight-systems/UserGuide/index.html)
+when implementing capture controls.
 
-| Question | Evidence | Interpretation/caveat |
+## Nsight Compute: test the hardware hypothesis
+
+Begin with a small set such as launch/resource information and a throughput
+overview. Add memory, scheduler, source, or instruction sections only for the
+question at hand. Metric/section availability varies by GPU and tool version;
+inspect `ncu --list-sections` and `ncu --query-metrics` on the target host.
+The [Nsight Compute profiling guide](https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html)
+documents section meanings and collection overhead.
+
+| Hypothesis | Evidence to inspect | Relevant curriculum |
 |---|---|---|
-| Bandwidth limited? | DRAM throughput, bytes read/written, L2 throughput/hit rate | Reused inputs can be served from cache |
-| Coalesced? | Global sectors/requests and memory transactions | Compare useful bytes with transaction bytes, including tails |
-| Instruction limited? | SM throughput, issue activity, source/SASS load instructions | `float4` may reduce instruction count while bytes remain identical |
-| Resource limited? | Registers/thread, shared memory/block, theoretical/achieved occupancy | More resident warps are useful only if they hide limiting latency |
-| Synchronization limited? | Barrier stalls, eligible warps/cycle, scheduler issue activity | Compare the tree and shuffle reduction at identical launch geometry |
-| Divergence/tails? | Active threads per executed warp, branch efficiency, source counters | Metric names vary; tiny rows naturally leave lanes idle |
-| Shared-memory conflicts? | Shared bank conflicts, transactions per request | Separate replay/conflicts from necessary multi-warp traffic |
-| Spilling? | Local-memory load/store traffic, registers/thread | Large padded Triton rows may spill or lose residency |
-| Launch bound? | Nsight Systems CUDA API and kernel timeline, gaps, launch count | A two-pass reduction can lose on small N despite faster device work |
+| DRAM bandwidth limits execution | DRAM bytes/throughput, working-set size, L2 hit rate | Copy, transpose, GEMV, cache reads |
+| Accesses waste transactions | Sectors/requests and useful bytes per request | Transpose, RGB, sparse gather |
+| Shared-memory layout conflicts | Bank conflicts, shared transactions, tile layout | Padded transpose, histogram, GEMM |
+| Synchronization limits issue | Barrier stalls, eligible warps, issue activity | Reduction, scan, normalization |
+| Registers constrain residency | Registers/thread, local-memory traffic, achieved/theoretical occupancy | Wide softmax, GEMM tiles, fusion |
+| Integer/exponential pipeline is saturated | Instruction mix and pipeline utilization | Hashing, SiLU, softmax |
+| Tensor Cores are underused | Matrix-instruction activity, operand staging, tile/padding efficiency | FP16/INT8 GEMM, online attention |
+| Work is imbalanced | Per-block work distribution, active versus eligible warps, tail waves | Sparse rows, batched GEMM, MoE |
+| Cache reuse explains a speedup | L2 throughput/hits and measured memory bytes | GQA, weight scales, paged caches |
 
-Start with the sections above. Add a focused `SourceCounters` section and inspect
-source/SASS if instruction or stall attribution remains unclear. Sampling a
-stall reason does not alone establish causality; change one factor and compare.
+Treat stalls, occupancy, and cache hit rates as diagnostic evidence. A counter
+change alone does not establish causality; pair it with the controlled code
+change and repeated latency observations. Profiler replay can perturb execution
+and memory state, so keep uninstrumented timing separate.
 
-## Memory and synchronization validation
+## Capture plan for a flagship
 
-On a CUDA development host with Compute Sanitizer installed:
+Select one small, one typical, and one resource-stressing shape. Capture baseline
+and the proposed variant under the same environment. Record the exact command,
+source revision, GPU/tool versions, section selection, expected bottleneck, and
+observed differences. Link raw reports from the study's eventual `results/`
+directory; large reports can live as release artifacts with checksums.
 
-```bash
-compute-sanitizer --tool memcheck --error-exitcode 1 python -m benchmarks.profile_workload \
-  --kernel vector_add --implementation cuda_optimized --shape 1027 --iterations 1
-compute-sanitizer --tool racecheck --error-exitcode 1 python -m benchmarks.profile_workload \
-  --kernel reduction --implementation cuda_optimized --shape 4099 --iterations 1
-compute-sanitizer --tool synccheck --error-exitcode 1 python -m benchmarks.profile_workload \
-  --kernel softmax --implementation cuda_optimized --shape 17 129 --iterations 1
-```
+Use memory, race, and synchronization checking before trusting a speedup from
+shared memory, in-place updates, or asynchronous work. Those checks are future
+validation steps, not profiler output already obtained.
 
-Run sanitizer checks separately from benchmarks. Profiling instrumentation,
-replay, cache flushing, and synchronization perturb execution. Keep a normal
-benchmark JSON alongside profiles rather than treating replay duration as latency.
+## Evidence placeholder
 
-## Evidence template
+Status: **Results pending hardware benchmark**.
 
-```text
-Status: Results pending hardware benchmark
-Source commit and exact command:
-GPU / driver / Nsight versions:
-Shape / dtype / implementation:
-Expected bottleneck:
-Measured benchmark change and dispersion:
-Counter/section observations:
-Alternative explanation:
-Next falsifying experiment:
-Relative path to raw profiler report:
-```
-
-Do not fill in a counter or claim until an actual capture supports it.
-
-## Official references
-
-- [Nsight Compute profiling guide](https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html)
-- [Nsight Systems user guide](https://docs.nvidia.com/nsight-systems/UserGuide/index.html)
-- [Compute Sanitizer](https://docs.nvidia.com/compute-sanitizer/ComputeSanitizer/index.html)
-- [JAX profiling](https://docs.jax.dev/en/latest/profiling.html)
+Future notes should contain the hypothesis, selected metrics and why, measured
+observations, alternative explanations, and next experiment. Leave observations
+empty until a real capture exists. Do not paste fabricated screenshots or numbers.

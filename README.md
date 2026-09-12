@@ -1,170 +1,125 @@
 # GPU Performance Lab
 
-GPU kernel implementation, profiling, and optimization experiments across CUDA,
-Triton, PyTorch, and JAX.
+A structured GPU performance engineering curriculum exploring CUDA, Triton,
+PyTorch, and JAX implementations of increasingly complex GPU and ML workloads,
+with emphasis on benchmarking, profiling, hardware behavior, and optimization methodology.
 
-This lab investigates how high-level ML operations map onto GPU hardware. Each
-experiment starts with a correct baseline, identifies an expected bottleneck,
-changes the execution strategy, and provides a reproducible path to test the
-explanation with timing and profiler evidence.
+**50 planned studies · 7 stages · 14 flagship problems · 43 LeetGPU sources + 7 Portfolio Extensions**
 
-**Status:** three forward workloads implemented. NVIDIA execution and performance
-validation are pending. **Results pending hardware benchmark.** Implementation
-coverage below describes code availability, not measured speedups or GPU validation.
+The goal is to explain how algorithms map onto hardware: what data moves, where
+parallelism comes from, which resource limits execution, and why an optimization
+changes performance. Workload sources supply starting contracts; evidence and
+technical analysis define the portfolio.
 
-| Kernel | PyTorch | JAX/XLA | Triton | CUDA | Optimization notes |
-|---|:---:|:---:|:---:|:---:|---|
-| [Vector add](kernels/01_vector_add) | ✅ | ✅ | ✅ | ✅ | Coalesced scalar → aligned FP32 `float4` |
-| [Reduction](kernels/02_reduction) | ✅ | ✅ | ✅ | ✅ | Shared tree → warp shuffles; FP32 accumulation |
-| [Softmax](kernels/03_softmax) | ✅ | ✅ | ✅ | ✅ | Serial row → cooperative row; stable reduction |
-| LayerNorm / RMSNorm | planned | planned | planned | planned | Reduction, fusion, register reuse |
-| GEMV / GEMM | planned | planned | planned | planned | Data reuse, tiling, Tensor Cores |
-| Transformer primitives | planned | where useful | planned | planned | Fusion, layout, cache behavior |
-| FlashAttention-like attention | planned | where useful | planned | planned | IO-aware tiled attention |
+## Roadmap
 
-## Motivation
+**LG** = verified LeetGPU challenge; **PE** = Portfolio Extension. `plan` means
+intended implementation, not existing code. `—` means no current backend plan.
+Difficulty is our [1–5 scale](docs/curriculum.md#difficulty-scale); official
+LeetGPU difficulty is recorded in every source README. P0 = flagship, P1 =
+important, P2 = useful learning. Status: ⬜ Planned · 🟨 In Progress · ✅ Complete · 🚀 Optimized.
 
-Performance engineering requires more than a fast kernel on one input. The useful
-questions are where time goes, which hardware resource limits progress, how the
-answer changes with shape and precision, and whether an optimization remains
-correct at boundaries. The lab emphasizes memory traffic, synchronization,
-instruction issue, occupancy, register pressure, and kernel launch overhead.
+| # | Problem | Source | Stage | Difficulty | Priority | CUDA | Triton | PyTorch | JAX | Primary lesson | Status |
+|---:|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|---|---|
+| 01 | [Vector Addition](problems/01_vector_add/README.md) | LG | S1 | 1/5 | P1 | plan | plan | plan | plan | Launch overhead vs bandwidth | ⬜ Planned |
+| 02 | [ReLU](problems/02_relu/README.md) | LG | S1 | 1/5 | P2 | plan | plan | plan | — | Predication and branching | ⬜ Planned |
+| 03 | [Reverse Array](problems/03_reverse_array/README.md) | LG | S1 | 1/5 | P2 | plan | plan | plan | — | Race-free in-place indexing | ⬜ Planned |
+| 04 | [Interleave Arrays](problems/04_interleave_arrays/README.md) | LG | S1 | 2/5 | P2 | plan | plan | plan | — | Lane-to-output mapping | ⬜ Planned |
+| 05 | [RGB to Grayscale](problems/05_rgb_to_grayscale/README.md) | LG | S1 | 2/5 | P2 | plan | plan | plan | — | Interleaved channel access | ⬜ Planned |
+| 06 | [Rainbow Table](problems/06_rainbow_table/README.md) | LG | S1 | 2/5 | P2 | plan | — | plan | — | Integer instruction throughput | ⬜ Planned |
+| 07 | [Matrix Copy](problems/07_matrix_copy/README.md) | LG | S2 | 2/5 | P1 | plan | plan | plan | — | Memory bandwidth ceiling | ⬜ Planned |
+| 08 | [Matrix Transpose](problems/08_matrix_transpose/README.md) | LG | S2 | 3/5 | P0 | plan | plan | plan | — | Shared-memory bank conflicts | ⬜ Planned |
+| 09 | [1D Convolution](problems/09_convolution_1d/README.md) | LG | S2 | 3/5 | P1 | plan | plan | plan | plan | Halo reuse in shared memory | ⬜ Planned |
+| 10 | [Gaussian Blur](problems/10_gaussian_blur/README.md) | LG | S2 | 3/5 | P1 | plan | plan | plan | plan | Separable filtering tradeoffs | ⬜ Planned |
+| 11 | [2D Max Pooling](problems/11_max_pooling_2d/README.md) | LG | S2 | 3/5 | P2 | plan | plan | plan | — | Overlapping window locality | ⬜ Planned |
+| 12 | [Weight Dequantization](problems/12_weight_dequantization/README.md) | LG | S2 | 3/5 | P1 | plan | plan | plan | — | Scale-tile locality | ⬜ Planned |
+| 13 | [Reduction](problems/13_reduction/README.md) | LG | S3 | 3/5 | P0 | plan | plan | plan | plan | Warp-level reduction | ⬜ Planned |
+| 14 | [Count Array Element](problems/14_count_array_element/README.md) | LG | S3 | 2/5 | P1 | plan | plan | plan | — | Predicate reduction | ⬜ Planned |
+| 15 | [Mean Squared Error](problems/15_mean_squared_error/README.md) | LG | S3 | 3/5 | P1 | plan | plan | plan | plan | Map-reduce fusion | ⬜ Planned |
+| 16 | [Dot Product](problems/16_dot_product/README.md) | LG | S3 | 3/5 | P1 | plan | plan | plan | plan | Fused multiply-accumulate reduction | ⬜ Planned |
+| 17 | [Prefix Sum](problems/17_prefix_sum/README.md) | LG | S3 | 3/5 | P1 | plan | plan | plan | — | Cross-block prefix propagation | ⬜ Planned |
+| 18 | [Histogramming](problems/18_histogramming/README.md) | LG | S3 | 3/5 | P1 | plan | plan | plan | — | Atomic contention | ⬜ Planned |
+| 19 | [Stream Compaction](problems/19_stream_compaction/README.md) | LG | S3 | 4/5 | P1 | plan | plan | plan | — | Stable parallel filtering | ⬜ Planned |
+| 20 | [Parallel Merge](problems/20_parallel_merge/README.md) | LG | S3 | 4/5 | P1 | plan | — | plan | — | Balanced irregular partitioning | ⬜ Planned |
+| 21 | [Dense GEMV](problems/21_dense_gemv/README.md) | **PE** | S4 | 3/5 | P1 | plan | plan | plan | plan | Low-arithmetic-intensity matrix math | ⬜ Planned |
+| 22 | [Sparse Matrix-Vector Multiplication](problems/22_sparse_matvec/README.md) | LG | S4 | 3/5 | P1 | plan | plan | plan | — | Irregular sparse memory access | ⬜ Planned |
+| 23 | [Matrix Multiplication](problems/23_matrix_multiplication_fp32/README.md) | LG | S4 | 3/5 | P1 | plan | plan | plan | plan | Shared-memory data reuse | ⬜ Planned |
+| 24 | [Batched Matrix Multiplication — FP32](problems/24_batched_matmul_fp32/README.md) | LG | S4 | 4/5 | P0 | plan | plan | plan | plan | Batch scheduling and occupancy | ⬜ Planned |
+| 25 | [General Matrix Multiplication (GEMM) — FP16](problems/25_gemm_fp16/README.md) | LG | S4 | 5/5 | P0 | plan | plan | plan | plan | Tensor Core utilization | ⬜ Planned |
+| 26 | [FP16 Batched Matrix Multiplication](problems/26_batched_matmul_fp16/README.md) | LG | S4 | 5/5 | P1 | plan | plan | plan | plan | Mixed-precision batch utilization | ⬜ Planned |
+| 27 | [INT8 Quantized MatMul](problems/27_int8_quantized_matmul/README.md) | LG | S4 | 5/5 | P1 | plan | plan | plan | — | Quantized arithmetic contracts | ⬜ Planned |
+| 28 | [Sparse Matrix-Dense Matrix Multiplication](problems/28_sparse_dense_matmul/README.md) | LG | S4 | 4/5 | P1 | plan | plan | plan | — | Sparse reuse across output columns | ⬜ Planned |
+| 29 | [Fused GEMM + Bias + Activation](problems/29_fused_gemm_epilogue/README.md) | **PE** | S4 | 4/5 | P1 | plan | plan | plan | plan | GEMM epilogue fusion | ⬜ Planned |
+| 30 | [Sigmoid Linear Unit](problems/30_silu/README.md) | LG | S5 | 2/5 | P2 | plan | plan | plan | plan | Special-function throughput | ⬜ Planned |
+| 31 | [Swish-Gated Linear Unit](problems/31_swiglu_activation/README.md) | LG | S5 | 3/5 | P1 | plan | plan | plan | plan | Elementwise gating fusion | ⬜ Planned |
+| 32 | [Softmax](problems/32_softmax/README.md) | LG | S5 | 4/5 | P0 | plan | plan | plan | plan | Numerically stable fused reduction | ⬜ Planned |
+| 33 | [RMS Normalization](problems/33_rms_norm/README.md) | LG | S5 | 3/5 | P0 | plan | plan | plan | plan | Normalization traffic and precision | ⬜ Planned |
+| 34 | [Layer Normalization](problems/34_layer_norm/README.md) | LG | S5 | 4/5 | P0 | plan | plan | plan | plan | Stable variance reduction | ⬜ Planned |
+| 35 | [Batch Normalization](problems/35_batch_norm/README.md) | LG | S5 | 4/5 | P1 | plan | plan | plan | plan | Reduction-axis layout | ⬜ Planned |
+| 36 | [Fused Residual Add and RMS Norm](problems/36_fused_residual_rms_norm/README.md) | LG | S5 | 4/5 | P0 | plan | plan | plan | plan | Residual-normalization fusion | ⬜ Planned |
+| 37 | [Categorical Cross Entropy Loss](problems/37_categorical_cross_entropy/README.md) | LG | S5 | 4/5 | P1 | plan | plan | plan | plan | Fused log-sum-exp loss | ⬜ Planned |
+| 38 | [Rotary Positional Embedding](problems/38_rope/README.md) | LG | S6 | 3/5 | P1 | plan | plan | plan | plan | Positional pair layouts | ⬜ Planned |
+| 39 | [SwiGLU MLP Block](problems/39_swiglu_mlp/README.md) | LG | S6 | 5/5 | P0 | plan | plan | plan | plan | MLP fusion boundaries | ⬜ Planned |
+| 40 | [Softmax Attention](problems/40_softmax_attention/README.md) | LG | S6 | 4/5 | P1 | plan | plan | plan | plan | Attention pipeline decomposition | ⬜ Planned |
+| 41 | [Causal Self-Attention](problems/41_causal_attention/README.md) | LG | S6 | 4/5 | P1 | plan | plan | plan | plan | Causal masking and triangular work | ⬜ Planned |
+| 42 | [Multi-Head Attention](problems/42_multi_head_attention/README.md) | LG | S6 | 5/5 | P0 | plan | plan | plan | plan | Head layout and scheduling | ⬜ Planned |
+| 43 | [Attention with Linear Biases](problems/43_alibi_attention/README.md) | LG | S6 | 4/5 | P1 | plan | plan | plan | plan | Fused attention bias generation | ⬜ Planned |
+| 44 | [Grouped Query Attention](problems/44_grouped_query_attention/README.md) | LG | S6 | 5/5 | P0 | plan | plan | plan | plan | Shared K/V head reuse | ⬜ Planned |
+| 45 | [Decaying Causal Attention](problems/45_decaying_causal_attention/README.md) | LG | S6 | 5/5 | P1 | plan | plan | plan | plan | Recurrence vs quadratic materialization | ⬜ Planned |
+| 46 | [Quantize / Dequantize Pipeline](problems/46_quantization_pipeline/README.md) | **PE** | S7 | 4/5 | P1 | plan | plan | plan | — | Quantization error vs bandwidth | ⬜ Planned |
+| 47 | [KV-Cache Update and Paged Access](problems/47_kv_cache_operations/README.md) | **PE** | S7 | 4/5 | P0 | plan | plan | plan | — | Stateful cache layout | ⬜ Planned |
+| 48 | [FlashAttention-Style Online Attention](problems/48_flash_attention/README.md) | **PE** | S7 | 5/5 | P0 | plan | plan | plan | plan | Numerically stable online reduction | ⬜ Planned |
+| 49 | [Paged Attention](problems/49_paged_attention/README.md) | **PE** | S7 | 5/5 | P0 | plan | plan | plan | — | Irregular decode-time attention | ⬜ Planned |
+| 50 | [MoE Token Routing and Dispatch](problems/50_moe_token_routing/README.md) | **PE** | S7 | 5/5 | P1 | plan | plan | plan | — | Balanced scatter and expert dispatch | ⬜ Planned |
 
-Read the [vector addition analysis](kernels/01_vector_add/README.md) for the
-smallest complete experiment, then [reduction](kernels/02_reduction/README.md)
-and [softmax](kernels/03_softmax/README.md) for progressively richer execution models.
+Read the [methodology](docs/methodology.md), [benchmarking plan](docs/benchmarking.md),
+[profiling plan](docs/profiling.md), and [hardware notes](docs/hardware.md).
+No latency, bandwidth, or speedup is claimed before a real hardware run.
 
-## Repository structure
+## Repository architecture
 
 ```text
-common/          Timing, correctness, metadata, CUDA helpers, backend loading
-kernels/         Three implemented experiments and eleven documented future workloads
-benchmarks/      Shared runner, JSON configs, Markdown/CSV reporting, profiler target
-docs/            Benchmarking, profiling, methodology, hardware, validation record
-scripts/         Environment setup, benchmarking, Nsight entry points
-tests/           CPU infrastructure, input contracts, CUDA stream checks
-.github/         CPU CI and explicitly dispatched self-hosted GPU validation
+gpu-performance-lab/
+├── README.md
+├── LICENSE
+├── CONTRIBUTING.md
+├── docs/
+│   ├── curriculum.md       # Difficulty, sequencing, backend scope
+│   ├── catalog.md          # Verified sources, semantic notes, exclusions
+│   ├── skills.md           # Concept-oriented links
+│   ├── flagship.md         # Deep-analysis targets
+│   ├── progress.md         # Manual status and coverage
+│   ├── methodology.md
+│   ├── benchmarking.md
+│   ├── profiling.md
+│   └── hardware.md
+├── problems/
+│   ├── 01_vector_add/README.md
+│   ├── ...                 # 50 study plans; no solution stubs
+│   └── 50_moe_token_routing/README.md
+├── common/README.md         # Future shared utilities boundary
+├── tests/README.md          # Future correctness organization
+├── benchmarks/README.md     # Future measurement organization
+├── scripts/README.md        # Future command-line entry points
+└── archive/
+    ├── README.md
+    └── initial-implementation/  # Earlier work, preserved unchanged
 ```
 
-Each implemented workload contains its own README, Python backends, benchmark
-entry point, correctness tests, CUDA sources/bindings/CMake target, and results
-directory. CUDA is loaded lazily through `torch.utils.cpp_extension`; an optional
-CMake build produces the same importable extension modules.
+Backend/test/result subdirectories are documented per problem and created only
+when their first meaningful file exists. There are no empty `.cu`/`.py` files,
+no generated solution placeholders, and no new active build or CI machinery.
 
-## Setup
+## Reproducibility and evidence
 
-Use Python 3.11+ on an NVIDIA Linux host for all backends. Install a CUDA-enabled
-PyTorch wheel appropriate to your driver, then:
+Future results must record the source commit, hardware, driver/toolkit and library
+versions, timing scope, shape, dtype, layout, seed, and exact commands. Retain raw
+samples as JSON, derive tables from those samples, and publish profiler captures
+separately. Cache effects, precision changes, and allocation policy must remain
+visible. **Results pending hardware benchmark.**
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -e '.[torch,dev]'
-python -m pip install -e '.[triton,jax]'  # Optional comparisons; JAX extra targets CUDA 12
-```
-
-The first CUDA invocation builds the extension and requires `nvcc`, a compatible
-host compiler, and Ninja. Builds and JIT compilation happen before measurement.
-See [hardware/setup details](docs/hardware.md) for compatibility and CMake commands.
-
-## Benchmark methodology
-
-Every timed implementation must first pass correctness against the same
-PyTorch inputs. Runs exclude compilation, include warmup, and retain raw latency
-samples plus p20/p50/p80, mean, standard deviation, source revision, and environment
-metadata. Inputs remain device-resident. Implementation order is shuffled using
-a recorded seed; output and scratch allocation are part of the functional API.
-
-Two timing scopes are available: synchronized host latency for comparisons across
-all runtimes, and CUDA events for PyTorch/Triton/CUDA on the PyTorch stream. They
-are reported separately. Effective GB/s uses minimum algorithmic traffic and
-must not be interpreted as measured DRAM throughput. See
-[benchmarking](docs/benchmarking.md) and [methodology](docs/methodology.md).
-
-## Running benchmarks
-
-```bash
-python -m benchmarks.run_all --output artifacts/smoke.json
-python -m benchmarks.run_all --config benchmarks/configs/full.json \
-  --implementations pytorch triton cuda_naive cuda_optimized \
-  --timing cuda_event --output artifacts/device.json
-python -m kernels.01_vector_add.benchmark --shape 16777219 \
-  --dtypes fp32 --output artifacts/vector-add.json
-python -m benchmarks.report artifacts/smoke.json --output artifacts/smoke.md
-python -m benchmarks.report artifacts/smoke.json --format csv --output artifacts/smoke.csv
-```
-
-Use a new output path for each run. Missing optional backends are recorded as
-skips; correctness/build/runtime failures make the command fail. `--require-all`
-also rejects skips. CPU reference/tooling smoke tests are available with
-`--device cpu --implementations pytorch jax`; these are not GPU performance results.
-
-## Running tests
-
-```bash
-python -m pytest -m 'not gpu' -q
-python -m pytest -m gpu --require-gpu-backends -q  # Provisioned NVIDIA host
-ruff check .
-ruff format --check .
-```
-
-Tests cover FP32/FP16/BF16, scalar and empty vectors, tails, non-power-of-two
-lengths, large tensors, storage offsets, cancellation, exceptional softmax
-values, and nondefault CUDA streams. Reduction returns FP32; other operations
-preserve input dtype. Operations are forward-only and require contiguous tensors.
-
-## Profiling
-
-```bash
-bash scripts/profile.sh ncu --kernel reduction --implementation cuda_optimized --shape 16777219
-bash scripts/profile.sh nsys --kernel softmax --implementation triton --shape 4096 4096
-```
-
-Capture starts after compilation, correctness, and warmup. The Nsight Compute
-entry point selects focused throughput, launch, occupancy, memory, and scheduler
-sections. [Profiling notes](docs/profiling.md) explain metrics, replay effects,
-and how to attach evidence to an optimization claim.
-
-## Supported hardware
-
-The intended GPU target is Linux with NVIDIA CUDA, with SM80+ recommended for
-native BF16 across backends. FP32/FP16 CUDA code uses warp shuffles and no
-architecture-specific asynchronous copy instructions. Actual support also
-depends on the installed PyTorch, Triton, JAX, toolkit, and driver versions.
-No NVIDIA GPU has yet been validated for this repository. macOS/CPU can run
-infrastructure and PyTorch/JAX reference tests; Apple MPS is outside this lab's scope.
-
-## Kernel roadmap
-
-| Phase | Workloads | Hardware questions |
-|---|---|---|
-| 1 — fundamentals | Vector add, reduction, scan, histogram | Bandwidth, barriers, warp communication, atomics |
-| 2 — ML primitives | Softmax, LayerNorm, RMSNorm, GEMV, GEMM, fused activation | Reduction fusion, data reuse, Tensor Cores |
-| 3 — transformers | RoPE, SwiGLU, cross entropy, quantization/dequantization, KV cache, attention | Layout, launch overhead, irregular memory, numerical stability |
-| 4 — advanced | FlashAttention-like kernels, paged attention, quantized GEMM, persistent kernels, MoE routing, fused transformer operations | IO complexity, asynchronous copies, resource scheduling |
-
-Future directories contain problem statements, performance hypotheses, and
-acceptance criteria. They contain no placeholder implementations presented as working code.
-
-## Hardware notes
-
-Record GPU clocks, power limit, temperature, other GPU activity, and input working
-set relative to L2 before interpreting a result. A memory-bound large vector can
-be launch-bound at small sizes. Higher occupancy is a means of hiding latency,
-not a target independent of register reuse and instruction count. Shared memory
-is useful when it reduces communication costs or global traffic, not merely
-because it is on chip.
-
-## Reproducibility
-
-JSON is the measurement source of truth; Markdown and CSV are generated views.
-Each run records library versions, driver inventory, CUDA build version, GPU
-properties, Python/OS, seed, timing settings, and Git revision/dirty state.
-Save `python -m pip freeze` alongside publishable runs. Dependency ranges express
-compatibility intent, not a tested cross-product; attach an exact environment to
-each measured result. See [local validation](docs/validation.md) for what has
-actually been exercised and [CONTRIBUTING.md](CONTRIBUTING.md) for evidence requirements.
-
-MIT licensed. The project is independent and has no affiliation with a GPU vendor
-or AI laboratory.
+The [contribution guide](CONTRIBUTING.md) defines when a study becomes Complete
+or Optimized. LeetGPU names and links are attribution, not copied statements or
+solutions; this independent lab is not affiliated with LeetGPU or an employer.
+The repository's original material is MIT licensed; third-party content retains
+its own terms.
