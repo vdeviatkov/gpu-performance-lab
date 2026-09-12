@@ -18,7 +18,6 @@ None; start here.
 ## Difficulty
 
 - LeetGPU: **Easy**.
-- Curriculum: **1/5**, using the independent [difficulty scale](../../docs/curriculum.md#difficulty-scale).
 
 ## Why this problem matters
 

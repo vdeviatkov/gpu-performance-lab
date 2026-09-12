@@ -14,7 +14,7 @@ technical analysis define the portfolio.
 ## Roadmap
 
 `plan` means intended implementation, not existing code. `—` means no current
-backend plan. Difficulty is our [1–5 scale](docs/curriculum.md#difficulty-scale).
+backend plan. Difficulty is our independent 1–5 scale.
 Source and official LeetGPU difficulty are recorded in each problem README. Status: ⬜ Planned · 🟨 In Progress · ✅ Complete · 🚀 Optimized.
 
 | # | Problem | Difficulty | CUDA | Triton | PyTorch | JAX | Primary lesson | Status |
@@ -70,7 +70,6 @@ Source and official LeetGPU difficulty are recorded in each problem README. Stat
 | 49 | [Paged Attention](problems/49_paged_attention/README.md) | 5/5 | plan | plan | plan | — | Irregular decode-time attention | ⬜ Planned |
 | 50 | [MoE Token Routing and Dispatch](problems/50_moe_token_routing/README.md) | 5/5 | plan | plan | plan | — | Balanced scatter and expert dispatch | ⬜ Planned |
 
-Browse the [curriculum guide](docs/curriculum.md) or [skill map and flagships](docs/skills.md).
 For implementation, follow the [methodology and tests](docs/methodology.md),
 [benchmarking and hardware plan](docs/benchmarking.md), and [profiling plan](docs/profiling.md).
 No latency, bandwidth, or speedup is claimed before a real hardware run.
@@ -83,8 +82,6 @@ gpu-performance-lab/
 ├── LICENSE
 ├── CONTRIBUTING.md           # Status and contribution rules
 ├── docs/
-│   ├── curriculum.md         # Difficulty, learning route, source notes
-│   ├── skills.md             # Concept links and flagship studies
 │   ├── methodology.md        # Workflow and correctness testing
 │   ├── benchmarking.md       # Timing, hardware, and reproducibility
 │   └── profiling.md          # Nsight investigation plan

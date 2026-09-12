@@ -18,7 +18,6 @@ must be labeled separately.
 ## Difficulty
 
 - LeetGPU: **Easy**.
-- Curriculum: **2/5**, using the independent [difficulty scale](../../docs/curriculum.md#difficulty-scale).
 
 ## Why this problem matters
 
