@@ -4,8 +4,6 @@ A structured GPU performance engineering curriculum exploring CUDA, Triton,
 PyTorch, and JAX implementations of increasingly complex GPU and ML workloads,
 with emphasis on benchmarking, profiling, hardware behavior, and optimization methodology.
 
-**50 planned studies · CUDA · Triton · PyTorch · JAX**
-
 The goal is to explain how algorithms map onto hardware: what data moves, where
 parallelism comes from, which resource limits execution, and why an optimization
 changes performance. Workload sources supply starting contracts; evidence and
