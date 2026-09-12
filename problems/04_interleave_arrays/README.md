@@ -11,15 +11,9 @@ For LeetGPU work, confirm the current signature, layout, dtype, and boundary
 contract on the linked page before writing a reference. Any broader lab variant
 must be labeled separately.
 
-## Stage
+## Prerequisites
 
-Stage 1 — GPU Fundamentals
-
-Prerequisites: [01 · Vector Addition](../01_vector_add/README.md); [03 · Reverse Array](../03_reverse_array/README.md)
-
-## Priority
-
-**P2** — focused learning problem.
+[01 · Vector Addition](../01_vector_add/README.md); [03 · Reverse Array](../03_reverse_array/README.md)
 
 ## Difficulty
 
@@ -99,4 +93,4 @@ No accepted implementation or measured results for this curriculum entry.
 Results pending hardware benchmark.
 
 Follow the [optimization methodology](../../docs/methodology.md). When work
-begins, add evidence and update [progress](../../docs/progress.md) manually.
+begins, add evidence and update the [roadmap status](../../README.md#roadmap).

@@ -1,87 +1,78 @@
-# Curriculum design
+# Curriculum guide
 
-The ordered route contains **50 core studies: 43 LeetGPU challenges and 7
-Portfolio Extensions**. This is a learning and evidence plan, not a promise that
-every workload will beat a vendor library. Official source difficulty and our
-engineering difficulty are intentionally separate.
+The [roadmap](../README.md#roadmap) is the single overview of the 50 studies and
+their progress. Problem READMEs hold source links, prerequisites, planned
+backends, and experiments. The [skill map](skills.md) offers an alternative
+way to browse, including a short list of flagship studies.
 
 ## Difficulty scale
 
-| Level | Expected engineering complexity | Representative study |
-|---|---|---|
-| 1/5 | Basic indexing, elementwise work, ownership, launch boundaries | Vector addition; reverse array |
-| 2/5 | Basic memory mapping, instruction behavior, simple aggregation | Interleave; count |
-| 3/5 | Shared memory, warp communication, moderate tiling and precision choices | Transpose; reduction; GEMV |
-| 4/5 | Multi-stage algorithms, substantial tiling, stable ML reductions, fusion | Compaction; batched FP32 GEMM; softmax |
-| 5/5 | Tensor Core/resource tuning, advanced attention, stateful inference, sophisticated fusion | FP16 GEMM; GQA; online attention |
-
-The rating reflects the intended optimized study, not merely writing a correct
-first kernel. Difficulty can decrease when a later study isolates a simpler
-new idea, such as SiLU or RoPE, after its prerequisites are established.
-
-## Priority scale
-
-- **P0 — flagship:** deep implementation progression and performance explanation.
-- **P1 — important:** a distinctive concept or a prerequisite worth implementing carefully.
-- **P2 — useful learning:** a bounded experiment that builds a specific skill.
-
-There are 14 P0, 29 P1, and 7 P2 studies. None is marked complete merely because
-an archived prototype exists. Completion requires the current study contract
-and evidence; see [progress](progress.md).
-
-## Dependency path
-
-Stage 1 introduces indexing, predication, and in-place ownership. Stage 2 moves
-through a copy control, transpose, shared tiles, and metadata locality. Stage 3
-starts with reduction before count, MSE, dot product, scan, histogram, compaction,
-and merge. Count and MSE are deliberately moved out of the introductory stage
-because their useful GPU implementations depend on aggregation.
-
-Stage 4 proceeds from dense GEMV and sparse GEMV to FP32 tiled multiplication,
-FP32 batching, FP16 GEMM, FP16 batching, quantized matrix math, sparse reuse, and
-a fused epilogue. Stage 5 adds stable normalization and fusion. Stage 6 builds
-transformer layouts, gated MLPs, materialized attention, causal masks, multiple
-heads, positional biases, GQA, and a distinct recurrence-friendly operation.
-
-Stage 7 closes with quantization, cache state, online attention, paging, and
-expert dispatch. Dense GEMV and the fused GEMM epilogue are Portfolio Extensions
-embedded earlier where their prerequisites and lessons fit. Each problem README
-links to earlier prerequisites; no problem depends on a later core entry.
-
-## Implementation depth by backend
-
-| Backend | Planned studies | Role |
-|---|---:|---|
-| CUDA | 50 | Explicit hardware mapping, straightforward baseline, named optimizations |
-| Triton | 48 | Block/program layout, masks, reductions, compiler/resource tradeoffs |
-| PyTorch | 50 | Correctness reference and an appropriate production/library baseline |
-| JAX | 29 | Selected XLA lowering, fusion, mixed-precision, and attention comparisons |
-
-CUDA-only algorithm depth is sufficient for Rainbow Table and Parallel Merge;
-their initial plans defer Triton. Dynamic output, mutable caches, and routing
-also defer JAX until a comparable functional contract is worth the effort.
-No backend is required just to fill a table cell. Record the reason and update
-coverage denominators if scope changes.
-
-The LeetGPU submission interface and the local research API need not be identical.
-First reproduce the source contract. Then label wider dtype, shape, stride,
-batching, or hardware experiments as lab variants. For example, source FP32
-semantics must not quietly become TF32 or lower precision in a comparison.
-
-## Critical selection review
-
-| Review question | Decision |
+| Level | Intended engineering depth |
 |---|---|
-| Too much trivial elementwise work? | Six introductory studies have different lessons: throughput, predication, ownership, packing, channel layout, integer dependencies. Activation variants beyond SiLU and gating are deferred. |
-| Too many convolutions? | Keep 1D convolution for halos and Gaussian blur for conditional separability; defer general 2D/3D convolution. Pooling isolates stride-dependent maximum windows. |
-| Reduction and synchronization represented? | Dedicated reduction flagship plus predicate count, map-reduce losses, dot product, scan, histogram, and compaction. |
-| Strong memory progression? | Copy control → transpose/bank conflicts → halo reuse → scale metadata → sparse access → paging. |
-| Strong matrix progression? | GEMV → sparse GEMV → FP32 reuse → batching → FP16 Tensor Cores → quantized arithmetic → sparse reuse → epilogue fusion. |
-| Modern ML relevance? | Norms, residual fusion, RoPE, SwiGLU MLP, GQA, stateful caches, online/paged attention, and MoE dispatch. |
-| Distinct advanced lessons? | ALiBi removes bias materialization; GQA studies K/V sharing; decaying attention changes the algorithm; paging introduces indirection and mixed-length scheduling. |
-| Triton and XLA represented appropriately? | Triton spans 48 studies; 29 targeted JAX comparisons emphasize compiler/fusion questions rather than mandatory four-backend coverage. |
-| Hardware reasoning beyond ML? | Integer dependencies, in-place ownership, irregular merge, sparse load balance, atomics, and cache behavior also serve systems/low-latency learning. |
+| 1/5 | Basic indexing, elementwise work, ownership, launch boundaries |
+| 2/5 | Memory mapping, instruction behavior, simple aggregation |
+| 3/5 | Shared memory, warp communication, moderate tiling |
+| 4/5 | Multi-pass algorithms, stable ML reductions, substantial tiling and fusion |
+| 5/5 | Tensor Core tuning, online attention, stateful inference, sophisticated fusion |
 
-The next optional expansion should target a new mechanism rather than another
-activation or mask: segmented scan/SSM recurrence, INT4 weight-only GEMM,
-attention backward, or top-p sampling. See [catalog decisions](catalog.md).
+This describes the intended study depth, not just the first correct kernel.
+Official LeetGPU difficulty is separate and appears in each problem README.
+
+## Learning route
+
+Follow indexing and ownership with copy/transpose and tiled memory access.
+Implement reduction before count, losses, dot product, scan, and compaction.
+Then progress through GEMV, sparse access, FP32 GEMM, batching, FP16/Tensor Cores,
+quantized math, normalization, fusion, attention, caches, and routing.
+
+Start with **01 Vector Addition → 02 ReLU → 03 Reverse Array → 07 Matrix Copy →
+08 Matrix Transpose**, then **13 Reduction**. Other introductory studies are
+useful focused exercises. Prerequisite links let you choose a route without
+maintaining a separate stage or priority system.
+
+CUDA exposes hardware mapping; Triton provides a compiler/block-layout contrast;
+PyTorch supplies the reference and a meaningful baseline. Add JAX where XLA
+lowering or fusion answers a distinct question. The roadmap records backend
+scope; no separate coverage table needs updating.
+
+## Sources and scope
+
+The [LeetGPU catalog](https://leetgpu.com/challenges) was inspected on 2026-09-12:
+43 challenges were selected from 99 listings, with titles, URLs, and official
+difficulties verified. Seven Portfolio Extensions fill gaps or extend workloads
+into systems studies. Each problem README is the source-link record; there is
+no duplicate catalog table.
+
+Keep these source distinctions explicit when implementing:
+
+- **Parallel Merge** is the catalog match for merge-sorted-arrays.
+- **Batched Matrix Multiplication** uses FP32; **General Matrix Multiplication
+  (GEMM)** uses FP16 matrices with FP32 alpha/beta scalars.
+- RMSNorm, LayerNorm, RoPE, and fused residual + RMSNorm already have source
+  challenges. Source RMSNorm uses a vector with scalar scale/shift; the fused
+  residual challenge uses weighted rows.
+- BatchNorm reduces over the batch axis. Cross entropy consumes logits and class
+  indices. SwiGLU activation splits a vector into halves; the MLP is a separate
+  projection workload.
+- Weight Dequantization receives scale metadata. The custom quantization study
+  also computes scales and converts values.
+- Decaying Causal Attention is unnormalized; introducing softmax changes its contract.
+
+Confirm current source signatures before implementation. Label broader dtype,
+layout, precision, or batching experiments as lab variants. Link statements
+rather than copying them or solutions.
+
+## Why this selection
+
+The core limits duplicate activations, dimensional counting variants, and general
+2D/3D convolution. Copy provides a control for transpose; 1D convolution teaches
+halos; Gaussian blur studies conditional separability. FP32 batching, FP16 GEMM,
+and FP16 batching isolate scheduling, matrix instructions, and tile granularity.
+
+Full transformer blocks, additional attention masks, FFT/graph algorithms, and
+application-level regression/clustering are deferred to keep individual hardware
+hypotheses visible. Useful next electives include segmented scans/SSMs, top-k or
+top-p sampling, INT4 GEMM, quantized KV attention, and attention backward.
+
+The earlier implementation remains available in Git history at commit
+`dd2d199`; it is not part of this planning scaffold or accepted performance evidence.

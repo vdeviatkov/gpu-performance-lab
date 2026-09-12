@@ -9,15 +9,9 @@ For LeetGPU work, confirm the current signature, layout, dtype, and boundary
 contract on the linked page before writing a reference. Any broader lab variant
 must be labeled separately.
 
-## Stage
+## Prerequisites
 
-Stage 7 — Portfolio Extensions
-
-Prerequisites: [25 · General Matrix Multiplication (GEMM)](../25_gemm_fp16/README.md); [32 · Softmax](../32_softmax/README.md); [41 · Causal Self-Attention](../41_causal_attention/README.md); [42 · Multi-Head Attention](../42_multi_head_attention/README.md); [44 · Grouped Query Attention](../44_grouped_query_attention/README.md)
-
-## Priority
-
-**P0** — flagship / deepest implementation and evidence.
+[25 · General Matrix Multiplication (GEMM)](../25_gemm_fp16/README.md); [32 · Softmax](../32_softmax/README.md); [41 · Causal Self-Attention](../41_causal_attention/README.md); [42 · Multi-Head Attention](../42_multi_head_attention/README.md); [44 · Grouped Query Attention](../44_grouped_query_attention/README.md)
 
 ## Difficulty
 
@@ -102,4 +96,4 @@ No accepted implementation or measured results for this curriculum entry.
 Results pending hardware benchmark.
 
 Follow the [optimization methodology](../../docs/methodology.md). When work
-begins, add evidence and update [progress](../../docs/progress.md) manually.
+begins, add evidence and update the [roadmap status](../../README.md#roadmap).

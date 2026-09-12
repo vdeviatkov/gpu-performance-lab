@@ -11,15 +11,9 @@ For LeetGPU work, confirm the current signature, layout, dtype, and boundary
 contract on the linked page before writing a reference. Any broader lab variant
 must be labeled separately.
 
-## Stage
+## Prerequisites
 
-Stage 6 — Transformer Kernels
-
-Prerequisites: [25 · General Matrix Multiplication (GEMM)](../25_gemm_fp16/README.md); [29 · Fused GEMM + Bias + Activation](../29_fused_gemm_epilogue/README.md); [31 · Swish-Gated Linear Unit](../31_swiglu_activation/README.md)
-
-## Priority
-
-**P0** — flagship / deepest implementation and evidence.
+[25 · General Matrix Multiplication (GEMM)](../25_gemm_fp16/README.md); [29 · Fused GEMM + Bias + Activation](../29_fused_gemm_epilogue/README.md); [31 · Swish-Gated Linear Unit](../31_swiglu_activation/README.md)
 
 ## Difficulty
 
@@ -103,4 +97,4 @@ No accepted implementation or measured results for this curriculum entry.
 Results pending hardware benchmark.
 
 Follow the [optimization methodology](../../docs/methodology.md). When work
-begins, add evidence and update [progress](../../docs/progress.md) manually.
+begins, add evidence and update the [roadmap status](../../README.md#roadmap).

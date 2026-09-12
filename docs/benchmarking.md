@@ -1,8 +1,6 @@
 # Benchmarking plan
 
 **Plan only. No active benchmark framework is implemented in this scaffold.**
-The earlier framework is preserved in the [archive](../archive/README.md), but
-it is not the current API or an accepted measurement system for these studies.
 
 ## Contract before timing
 
@@ -13,10 +11,8 @@ Use the same input values and a meaningful PyTorch/library baseline. Add
 comparisons must preserve semantics and use a GPU rather than an accidental CPU
 fallback.
 
-Correctness gates timing. Test tails, empty/tiny cases where defined, large and
-odd shapes, numerical extremes, and data-dependent distributions. Use tolerances
-justified by dtype and reduction behavior; also inspect absolute error near
-cancellation. Check exact integer results where the contract demands them.
+Correctness gates timing; follow the [test requirements](methodology.md#correctness-and-tests)
+before collecting performance samples.
 
 ## Planned measurement rules
 
@@ -57,6 +53,24 @@ when implementing the timer. Profiling and ordinary timing should be separate ru
 | Percentage of theoretical bandwidth | Sourced hardware ceiling | Do not guess the ceiling or equate cache throughput with DRAM bandwidth |
 | Occupancy/register/shared-memory use | Explain resource constraints | These are profiler observations, not independent performance scores |
 | Numerical error and memory footprint | Mixed precision and fusion | A faster result with changed semantics is a different experiment |
+
+## Hardware and setup
+
+Choose and record a concrete GPU/toolchain when implementation begins. No device
+support matrix or executable setup is established yet. Plan for Python 3.11+,
+modern C++17 or later, compatible PyTorch/Triton/JAX packages, and a matching
+NVIDIA driver/toolkit. A single documented GPU is enough to start; CPU reference
+checks are not GPU performance evidence.
+
+Record compute capability, SM count, memory capacity and L2 size, and sourced
+bandwidth/compute ceilings for the exact arithmetic mode. FP16/BF16, integer
+matrix instructions, FP8, and asynchronous copies depend on the actual hardware
+and software. Record input, accumulator, and output dtypes separately. Tensor
+Core support does not prove efficient utilization.
+
+Add a small extension/build setup once there is code to compile. Save an exact
+package freeze with each measured run; avoid a large dependency stack or Docker
+until it solves a concrete reproducibility problem.
 
 ## Environment record
 

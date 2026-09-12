@@ -11,15 +11,9 @@ For LeetGPU work, confirm the current signature, layout, dtype, and boundary
 contract on the linked page before writing a reference. Any broader lab variant
 must be labeled separately.
 
-## Stage
+## Prerequisites
 
-Stage 2 — Memory & Data Movement
-
-Prerequisites: [07 · Matrix Copy](../07_matrix_copy/README.md); [08 · Matrix Transpose](../08_matrix_transpose/README.md)
-
-## Priority
-
-**P1** — important.
+[07 · Matrix Copy](../07_matrix_copy/README.md); [08 · Matrix Transpose](../08_matrix_transpose/README.md)
 
 ## Difficulty
 
@@ -99,4 +93,4 @@ No accepted implementation or measured results for this curriculum entry.
 Results pending hardware benchmark.
 
 Follow the [optimization methodology](../../docs/methodology.md). When work
-begins, add evidence and update [progress](../../docs/progress.md) manually.
+begins, add evidence and update the [roadmap status](../../README.md#roadmap).

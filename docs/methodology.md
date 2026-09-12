@@ -14,8 +14,8 @@ model, and measurements. Nothing in this document is an implemented framework.
    temporary storage, parallelism, and a plausible lower bound.
 4. **Implement a straightforward GPU version.** Make ownership and memory
    access visible before introducing sophisticated scheduling.
-5. **Benchmark.** Use the planned warmup, completion, precision, and sampling rules.
-6. **Profile.** Inspect a representative case with counters chosen for a hypothesis.
+5. **Benchmark.** Follow the [timing and environment plan](benchmarking.md).
+6. **Profile.** Follow the [profiling plan](profiling.md) to test a specific hypothesis.
 7. **Identify the bottleneck.** Distinguish bandwidth, instruction/dependency
    throughput, synchronization, resource limits, and launch overhead.
 8. **Form an optimization hypothesis.** Predict what should change in both
@@ -42,6 +42,31 @@ model, and measurements. Nothing in this document is an implemented framework.
 - Is launch overhead dominant for small inputs or multi-pass algorithms?
 - Is fusion useful after accounting for resources and lost parallelism?
 - Are we trading recomputation for reduced memory traffic?
+
+## Correctness and tests
+
+Use pytest for Python interfaces. Keep problem-specific cases in that problem's
+`tests/` directory; extract shared checks only when multiple studies need them.
+Before timing, compare every implementation with an independent reference.
+
+Cover small/large and non-power-of-two shapes, tails, supported strides and
+alignment, numerical extremes, and exact integer behavior. Set dtype-specific
+error budgets and inspect absolute error near cancellation. For contention,
+sparsity, and routing, vary distributions as well as shapes.
+
+Check mutation/aliasing, output ownership, current streams, and device placement.
+Use GPU memory/race/synchronization checks for relevant low-level changes.
+Missing hardware is a skip; compilation or correctness failures are failures.
+
+## Repository organization
+
+Create `cuda/`, `triton/`, `pytorch/`, or `jax/` inside a problem when its first
+implementation exists. Add local `tests/`, `benchmarks/`, and `results/` as needed.
+Avoid empty source files and placeholder-only infrastructure directories.
+
+Extract common timing, correctness, environment, and CUDA helpers only after
+concrete reuse appears. Keep launches, allocations, ownership, and synchronization
+visible. Add shared scripts/build/CI only for actual executable work.
 
 ## Performance models
 
@@ -72,7 +97,7 @@ change, predicted counter behavior, measured latency distribution, observed
 counter changes, numerical effects, and an alternative explanation. Finish
 with one experiment that could disprove the explanation.
 
-P0 work should retain negative results. More occupancy, fewer instructions, or
+Retain negative results. More occupancy, fewer instructions, or
 higher cache hit rate is useful only if it explains better useful execution.
 Do not introduce Tensor Cores, asynchronous copies, or persistence merely to
 make a source file look advanced.
