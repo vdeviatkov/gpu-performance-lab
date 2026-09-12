@@ -1,0 +1,10 @@
+{
+  "cases": [
+    {"kernel": "vector_add", "shape": [1024]},
+    {"kernel": "vector_add", "shape": [1048583]},
+    {"kernel": "reduction", "shape": [1023]},
+    {"kernel": "reduction", "shape": [1048583]},
+    {"kernel": "softmax", "shape": [32, 127]},
+    {"kernel": "softmax", "shape": [1024, 1024]}
+  ]
+}

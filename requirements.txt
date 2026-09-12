@@ -1,0 +1,3 @@
+# Install a suitable CUDA-enabled PyTorch wheel first; see docs/hardware.md.
+-e .[torch,dev]
+# Optional GPU comparisons: pip install -e '.[triton,jax]'

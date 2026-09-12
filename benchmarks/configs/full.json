@@ -1,0 +1,22 @@
+{
+  "cases": [
+    {"kernel": "vector_add", "shape": [1]},
+    {"kernel": "vector_add", "shape": [255]},
+    {"kernel": "vector_add", "shape": [4099]},
+    {"kernel": "vector_add", "shape": [1048576]},
+    {"kernel": "vector_add", "shape": [16777219]},
+    {"kernel": "vector_add", "shape": [67108864]},
+    {"kernel": "reduction", "shape": [1]},
+    {"kernel": "reduction", "shape": [257]},
+    {"kernel": "reduction", "shape": [4099]},
+    {"kernel": "reduction", "shape": [1048576]},
+    {"kernel": "reduction", "shape": [16777219]},
+    {"kernel": "reduction", "shape": [67108864]},
+    {"kernel": "softmax", "shape": [1, 1]},
+    {"kernel": "softmax", "shape": [4096, 127]},
+    {"kernel": "softmax", "shape": [1024, 1024]},
+    {"kernel": "softmax", "shape": [4096, 4096]},
+    {"kernel": "softmax", "shape": [128, 8193]},
+    {"kernel": "softmax", "shape": [32, 32768]}
+  ]
+}
