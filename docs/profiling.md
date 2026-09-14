@@ -1,6 +1,5 @@
 # Profiling plan
 
-**Plan only. No profiling target or capture script is implemented here.**
 Each study should choose measurements from its optimization hypothesis, rather
 than collecting every counter and searching for a favorable explanation.
 

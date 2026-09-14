@@ -11,13 +11,14 @@ technical analysis define the portfolio.
 
 ## Roadmap
 
+`code` means implemented, with validation status in the problem README.
 `plan` means intended implementation, not existing code. `—` means no current
 backend plan. Difficulty is our independent 1–5 scale.
 Source and official LeetGPU difficulty are recorded in each problem README. Status: ⬜ Planned · 🟨 In Progress · ✅ Complete · 🚀 Optimized.
 
 | # | Problem | Difficulty | CUDA | Triton | PyTorch | JAX | Primary lesson | Status |
 | ---: | --- | :---: | :---: | :---: | :---: | :---: | --- | --- |
-| 01 | [Vector Addition](problems/01_vector_add/README.md) | 1/5 | plan | plan | plan | plan | Launch overhead vs bandwidth | ⬜ Planned |
+| 01 | [Vector Addition](problems/01_vector_add/README.md) | 1/5 | code | code | code | code | Launch overhead vs bandwidth | 🟨 In Progress |
 | 02 | [ReLU](problems/02_relu/README.md) | 1/5 | plan | plan | plan | — | Predication and branching | ⬜ Planned |
 | 03 | [Reverse Array](problems/03_reverse_array/README.md) | 1/5 | plan | plan | plan | — | Race-free in-place indexing | ⬜ Planned |
 | 04 | [Interleave Arrays](problems/04_interleave_arrays/README.md) | 2/5 | plan | plan | plan | — | Lane-to-output mapping | ⬜ Planned |
@@ -84,14 +85,15 @@ gpu-performance-lab/
 │   ├── benchmarking.md       # Timing, hardware, and reproducibility
 │   └── profiling.md          # Nsight investigation plan
 └── problems/
-    ├── 01_vector_add/README.md
+    ├── 01_vector_add/         # Implementations, tests, benchmarks, study notes
     ├── ...                   # 50 study plans
     └── 50_moe_token_routing/README.md
 ```
 
 Backend/test/result subdirectories are documented per problem and created only
 when their first meaningful file exists. There are no empty `.cu`/`.py` files,
-no generated solution placeholders, and no new active build or CI machinery.
+no generated solution placeholders. Vector addition builds its CUDA extension
+on first use; see its README for setup, tests, benchmarks, and profiling commands.
 
 ## Evidence and attribution
 

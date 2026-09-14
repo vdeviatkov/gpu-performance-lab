@@ -1,6 +1,6 @@
 # Benchmarking plan
 
-**Plan only. No active benchmark framework is implemented in this scaffold.**
+These are the lab-wide measurement rules.
 
 ## Contract before timing
 
@@ -56,8 +56,7 @@ when implementing the timer. Profiling and ordinary timing should be separate ru
 
 ## Hardware and setup
 
-Choose and record a concrete GPU/toolchain when implementation begins. No device
-support matrix or executable setup is established yet. Plan for Python 3.11+,
+Choose and record a concrete GPU/toolchain for each study. Plan for Python 3.11+,
 modern C++17 or later, compatible PyTorch/Triton/JAX packages, and a matching
 NVIDIA driver/toolkit. A single documented GPU is enough to start; CPU reference
 checks are not GPU performance evidence.
